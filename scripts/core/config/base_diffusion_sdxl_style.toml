@@ -7,7 +7,7 @@ cache_latents_to_disk = true
 caption_extension = ".txt"
 dynamo_backend = "no"
 enable_bucket = true
-gradient_checkpointing = false
+gradient_checkpointing = true
 low_vram = false
 
 ###### huggingface ######
