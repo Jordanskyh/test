@@ -26,13 +26,33 @@ def get_image_training_images_dir(task_id: str) -> str:
 def get_image_training_config_template_path(model_type: str, train_data_dir: str) -> tuple[str, bool]:
     model_type = model_type.lower()
     if model_type == ImageModelType.SDXL.value:
-        prompts_path = os.path.join(train_data_dir, "5_lora style")
+        # Find the first subdirectory in train_data_dir that contains text files
         prompts = []
-        for file in os.listdir(prompts_path):
-            if file.endswith(".txt"):
-                with open(os.path.join(prompts_path, file), "r") as f:
-                    prompt = f.read().strip()
-                    prompts.append(prompt)
+        found_prompts_dir = False
+        
+        if os.path.exists(train_data_dir):
+            for item in os.listdir(train_data_dir):
+                item_path = os.path.join(train_data_dir, item)
+                if os.path.isdir(item_path):
+                    # Check for .txt files in this directory
+                    txt_files = [f for f in os.listdir(item_path) if f.endswith(".txt")]
+                    if txt_files:
+                        found_prompts_dir = True
+                        for file in txt_files:
+                            try:
+                                with open(os.path.join(item_path, file), "r") as f:
+                                    prompt = f.read().strip()
+                                    prompts.append(prompt)
+                            except Exception as e:
+                                print(f"Error reading prompt file {file}: {e}")
+                        # We assume all prompts are in one directory for now, or we collect from all valid directories.
+                        # The original code only looked at one specific folder. 
+                        # To be safe and likely match the intent of 'prepare_dataset' which creates one folder, we can break after finding one.
+                        break 
+        
+        if not found_prompts_dir:
+             print(f"Warning: No directory with .txt files found in {train_data_dir}. Using default person config.")
+             return str(Path(train_cst.IMAGE_CONTAINER_CONFIG_TEMPLATE_PATH) / "base_diffusion_sdxl_person.toml"), False
 
         styles = detect_styles_in_prompts(prompts)
         print(f"Styles: {styles}")
