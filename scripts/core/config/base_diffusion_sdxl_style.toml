@@ -49,8 +49,8 @@ save_every_n_epochs = 20
 loss_type = "l2"
 
 ###### batch size ######
-train_batch_size = 16
-gradient_accumulation_steps = 1
+train_batch_size = 8
+gradient_accumulation_steps = 2
 
 ###### optimizer ######
 optimizer_type = "adamw"
@@ -64,7 +64,7 @@ lr_warmup_steps = 20
 
 ###### noise offset ######
 noise_offset_type = "Original"
-noise_offset = 0.1
+noise_offset = 0.035
 
 ###### misc ######
 network_alpha = -1
@@ -72,7 +72,7 @@ network_dim = -1
 network_module = "networks.lora"
 network_args = []
 network_dropout = 0
-caption_dropout_rate = 0
+caption_dropout_rate = 0.1
 clip_skip = 1
 max_timestep = 1000
 min_snr_gamma = 7
