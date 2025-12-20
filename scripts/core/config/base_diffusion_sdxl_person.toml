@@ -39,28 +39,29 @@ training_comment = ""
 xformers = true
 
 ###### steps and epochs ######
-max_train_epochs = 30
-save_every_n_epochs = 5
+max_train_epochs = 55
+save_every_n_epochs = 20
 
 ###### loss function ######
 loss_type = "l2"
 
 ###### batch size ######
-train_batch_size = 4
+train_batch_size = 16
 gradient_accumulation_steps = 1
 
 ###### optimizer ######
-optimizer_type = "prodigy"
-optimizer_args = ["decouple=True", "d_coef=1", "weight_decay=0.01", "use_bias_correction=True", "safeguard_warmup=True"]
-unet_lr = 1
-text_encoder_lr = 1
+optimizer_type = "adamw"
+optimizer_args = [ "betas=(0.9, 0.999)", "weight_decay=0.01", "eps=1e-08",]
+unet_lr = 1e-4
+text_encoder_lr = 1e-5
 
 ###### lr scheduler ######
-lr_scheduler = "constant"
+lr_scheduler = "cosine"
+lr_warmup_steps = 20
 
 ###### noise offset ######
-# noise_offset_type = "Original"
-# noise_offset = 0.0357
+noise_offset_type = "Original"
+noise_offset = 0.035
 # noise_offset_type = "Multires"
 # multires_noise_iterations = 6
 # multires_noise_discount = 0.3
