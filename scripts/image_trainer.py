@@ -8,6 +8,7 @@ import asyncio
 import os
 import subprocess
 import sys
+import json
 
 import toml
 
@@ -42,103 +43,16 @@ def create_config(task_id, model_path, model_name, model_type, expected_repo_nam
     with open(config_template_path, "r") as file:
         config = toml.load(file)
 
-    # Update config
-    network_config_person = {
-        "stabilityai/stable-diffusion-xl-base-1.0": 235,
-        "Lykon/dreamshaper-xl-1-0": 235,
-        "Lykon/art-diffusion-xl-0.9": 235,
-        "SG161222/RealVisXL_V4.0": 467,
-        "stablediffusionapi/protovision-xl-v6.6": 235,
-        "stablediffusionapi/omnium-sdxl": 235,
-        "GraydientPlatformAPI/realism-engine2-xl": 235,
-        "GraydientPlatformAPI/albedobase2-xl": 467,
-        "KBlueLeaf/Kohaku-XL-Zeta": 235,
-        "John6666/hassaku-xl-illustrious-v10style-sdxl": 228,
-        "John6666/nova-anime-xl-pony-v5-sdxl": 235,
-        "cagliostrolab/animagine-xl-4.0": 699,
-        "dataautogpt3/CALAMITY": 235,
-        "dataautogpt3/ProteusSigma": 235,
-        "dataautogpt3/ProteusV0.5": 467,
-        "dataautogpt3/TempestV0.1": 456,
-        "ehristoforu/Visionix-alpha": 235,
-        "femboysLover/RealisticStockPhoto-fp16": 467,
-        "fluently/Fluently-XL-Final": 228,
-        "mann-e/Mann-E_Dreams": 456,
-        "misri/leosamsHelloworldXL_helloworldXL70": 235,
-        "misri/zavychromaxl_v90": 235,
-        "openart-custom/DynaVisionXL": 228,
-        "recoilme/colorfulxl": 228,
-        "zenless-lab/sdxl-aam-xl-anime-mix": 456,
-        "zenless-lab/sdxl-anima-pencil-xl-v5": 228,
-        "zenless-lab/sdxl-anything-xl": 228,
-        "zenless-lab/sdxl-blue-pencil-xl-v7": 467,
-        "Corcelio/mobius": 228,
-        "GHArt/Lah_Mysterious_SDXL_V4.0_xl_fp16": 235,
-        "OnomaAIResearch/Illustrious-xl-early-release-v0": 228
-    }
-
-    network_config_style = {
-        "stabilityai/stable-diffusion-xl-base-1.0": 235,
-        "Lykon/dreamshaper-xl-1-0": 235,
-        "Lykon/art-diffusion-xl-0.9": 235,
-        "SG161222/RealVisXL_V4.0": 235,
-        "stablediffusionapi/protovision-xl-v6.6": 235,
-        "stablediffusionapi/omnium-sdxl": 235,
-        "GraydientPlatformAPI/realism-engine2-xl": 235,
-        "GraydientPlatformAPI/albedobase2-xl": 235,
-        "KBlueLeaf/Kohaku-XL-Zeta": 235,
-        "John6666/hassaku-xl-illustrious-v10style-sdxl": 235,
-        "John6666/nova-anime-xl-pony-v5-sdxl": 235,
-        "cagliostrolab/animagine-xl-4.0": 235,
-        "dataautogpt3/CALAMITY": 235,
-        "dataautogpt3/ProteusSigma": 235,
-        "dataautogpt3/ProteusV0.5": 235,
-        "dataautogpt3/TempestV0.1": 228,
-        "ehristoforu/Visionix-alpha": 235,
-        "femboysLover/RealisticStockPhoto-fp16": 235,
-        "fluently/Fluently-XL-Final": 235,
-        "mann-e/Mann-E_Dreams": 235,
-        "misri/leosamsHelloworldXL_helloworldXL70": 235,
-        "misri/zavychromaxl_v90": 235,
-        "openart-custom/DynaVisionXL": 235,
-        "recoilme/colorfulxl": 235,
-        "zenless-lab/sdxl-aam-xl-anime-mix": 235,
-        "zenless-lab/sdxl-anima-pencil-xl-v5": 235,
-        "zenless-lab/sdxl-anything-xl": 235,
-        "zenless-lab/sdxl-blue-pencil-xl-v7": 235,
-        "Corcelio/mobius": 235,
-        "GHArt/Lah_Mysterious_SDXL_V4.0_xl_fp16": 235,
-        "OnomaAIResearch/Illustrious-xl-early-release-v0": 235
-    }
-
-    config_mapping = {
-        228: {
-            "network_dim": 48,
-            "network_alpha": 48,
-            "network_args": []
-        },
-        235: {
-            "network_dim": 96,
-            "network_alpha": 96,
-            "network_args": ["conv_dim=8", "conv_alpha=8", "dropout=null"]
-        },
-        456: {
-            "network_dim": 192,
-            "network_alpha": 192,
-            "network_args": []
-        },
-        467: {
-            "network_dim": 192,
-            "network_alpha": 192,
-            "network_args": ["conv_dim=8", "conv_alpha=8", "dropout=null"]
-        },
-        699: {
-            "network_dim": 192,
-            "network_alpha": 192,
-            "network_args": ["conv_dim=8", "conv_alpha=8", "dropout=null"]
-        },
-    }
-
+    # --- 1. SETTING BASE YANG KUAT (UNIVERSAL) ---
+    # Kita set baseline yang stabil untuk semua model.
+    # Tidak ada lagi diskriminasi berdasarkan nama model.
+    # Rank 128 + Conv Dim 8 adalah "sweet spot" antara stabilitas dan detail.
+    
+    config["network_dim"] = 128
+    config["network_alpha"] = 128
+    config["network_args"] = ["conv_dim=8", "conv_alpha=8", "dropout=null"]
+    
+    # Setup path standar
     config["pretrained_model_name_or_path"] = model_path
     config["train_data_dir"] = train_data_dir
     output_dir = train_paths.get_checkpoints_output_path(task_id, expected_repo_name)
@@ -146,15 +60,44 @@ def create_config(task_id, model_path, model_name, model_type, expected_repo_nam
         os.makedirs(output_dir, exist_ok=True)
     config["output_dir"] = output_dir
 
-    if model_type == "sdxl":
-        if is_style:
-            network_config = config_mapping[network_config_style[model_name]]
-        else:
-            network_config = config_mapping[network_config_person[model_name]]
+    # --- 2. LOAD SPECIAL CONFIG FROM JSON (The Missing Link) ---
+    # Kita cari file json config yang sesuai (person atau style)
+    # Lokasi file json di folder scripts/lrs/
+    
+    lrs_dir = os.path.join(project_root, "scripts", "lrs")
+    json_config_filename = "style_config.json" if is_style else "person_config.json"
+    json_config_path = os.path.join(lrs_dir, json_config_filename)
+    
+    special_config = {}
+    
+    # Coba baca file JSON
+    if os.path.exists(json_config_path):
+        try:
+            with open(json_config_path, 'r') as f:
+                full_json = json.load(f)
+                
+            # Cek apakah Task ID kita punya settingan khusus
+            if task_id in full_json.get("data", {}):
+                print(f"[INFO] Found SPECIAL CONFIG for Task ID: {task_id}", flush=True)
+                special_config = full_json["data"][task_id]
+            else:
+                print(f"[INFO] No special config found for {task_id}. Using defaults.", flush=True)
+                
+        except Exception as e:
+            print(f"[WARNING] Failed to load JSON config: {e}", flush=True)
 
-        config["network_dim"] = network_config["network_dim"]
-        config["network_alpha"] = network_config["network_alpha"]
-        config["network_args"] = network_config["network_args"]
+    # --- 3. OVERWRITE CONFIG ---
+    # Jika ada special config, timpa settingan TOML
+    # Ini kuncinya! LR, Epochs, Noise Offset dari JSON akan masuk ke sini.
+    
+    for key, value in special_config.items():
+        if key in config:
+            print(f"   -> Overwriting {key}: {config[key]} -> {value}", flush=True)
+            config[key] = value
+        else:
+            # Jika key belum ada di toml (misal optimizer args yang kompleks), kita tambahkan
+            print(f"   -> Adding new setting {key}: {value}", flush=True)
+            config[key] = value
 
     # Save config to file
     config_path = os.path.join(train_cst.IMAGE_CONTAINER_CONFIG_SAVE_PATH, f"{task_id}.toml")
