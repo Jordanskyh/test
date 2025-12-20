@@ -64,7 +64,7 @@ lr_warmup_steps = 20
 
 ###### noise offset ######
 noise_offset_type = "Original"
-noise_offset = 0
+noise_offset = 0.1
 
 ###### misc ######
 network_alpha = -1
@@ -75,6 +75,6 @@ network_dropout = 0
 caption_dropout_rate = 0
 clip_skip = 1
 max_timestep = 1000
-min_snr_gamma = 5
+min_snr_gamma = 7
 scale_weight_norms = 5
 seed = 2951032222

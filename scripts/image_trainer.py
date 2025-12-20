@@ -113,28 +113,28 @@ def create_config(task_id, model_path, model_name, model_type, expected_repo_nam
 
     config_mapping = {
         228: {
-            "network_dim": 48,
-            "network_alpha": 48,
+            "network_dim": 32,
+            "network_alpha": 32,
             "network_args": []
         },
         235: {
-            "network_dim": 96,
-            "network_alpha": 96,
+            "network_dim": 32,
+            "network_alpha": 32,
             "network_args": ["conv_dim=8", "conv_alpha=8", "dropout=null"]
         },
         456: {
-            "network_dim": 192,
-            "network_alpha": 192,
+            "network_dim": 64,
+            "network_alpha": 64,
             "network_args": []
         },
         467: {
-            "network_dim": 192,
-            "network_alpha": 192,
+            "network_dim": 64,
+            "network_alpha": 64,
             "network_args": ["conv_dim=8", "conv_alpha=8", "dropout=null"]
         },
         699: {
-            "network_dim": 192,
-            "network_alpha": 192,
+            "network_dim": 64,
+            "network_alpha": 64,
             "network_args": ["conv_dim=8", "conv_alpha=8", "dropout=null"]
         },
     }
