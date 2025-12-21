@@ -64,9 +64,15 @@ def create_config(task_id, model_path, model_name, model_type, expected_repo_nam
     # Kita cari file json config yang sesuai (person atau style)
     # Lokasi file json di folder scripts/lrs/
     
-    lrs_dir = os.path.join(project_root, "scripts", "lrs")
+    # Fix Path: Gunakan absolute path dari lokasi file script ini berada
+    current_script_path = os.path.abspath(__file__) # c:/56/goy/image-test/scripts/image_trainer.py
+    scripts_dir_path = os.path.dirname(current_script_path) # c:/56/goy/image-test/scripts
+    lrs_dir = os.path.join(scripts_dir_path, "lrs") # c:/56/goy/image-test/scripts/lrs
+
     json_config_filename = "style_config.json" if is_style else "person_config.json"
     json_config_path = os.path.join(lrs_dir, json_config_filename)
+    
+    print(f"[DEBUG] Checking for LRS Config at: {json_config_path}", flush=True)
     
     special_config = {}
     
@@ -75,16 +81,21 @@ def create_config(task_id, model_path, model_name, model_type, expected_repo_nam
         try:
             with open(json_config_path, 'r') as f:
                 full_json = json.load(f)
+            
+            print(f"[DEBUG] LRS File Loaded. Checking Task ID: {task_id}", flush=True)
                 
             # Cek apakah Task ID kita punya settingan khusus
             if task_id in full_json.get("data", {}):
-                print(f"[INFO] Found SPECIAL CONFIG for Task ID: {task_id}", flush=True)
+                print(f"[SUCCESS] Found SPECIAL CONFIG for Task ID: {task_id}", flush=True)
                 special_config = full_json["data"][task_id]
+                print(f"[DEBUG] Content to overwrite: {special_config}", flush=True)
             else:
                 print(f"[INFO] No special config found for {task_id}. Using defaults.", flush=True)
                 
         except Exception as e:
             print(f"[WARNING] Failed to load JSON config: {e}", flush=True)
+    else:
+        print(f"[WARNING] LRS Config file NOT FOUND at: {json_config_path}", flush=True)
 
     # --- 3. OVERWRITE CONFIG ---
     # Jika ada special config, timpa settingan TOML
