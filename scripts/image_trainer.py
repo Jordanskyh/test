@@ -120,28 +120,11 @@ def create_config(task_id, model_path, model_name, model_type, expected_repo_nam
             batch_size = config.get("train_batch_size", 4)
             config["max_train_epochs"] = calculate_dynamic_epochs(num_images, batch_size, repeats, is_style)
 
-    # 3. RESEARCH BACKED BOOSTERS (SDXL ONLY)
+    # 3. RESEARCH BACKED BOOSTERS (SDXL ONLY) - [CLEANUP]
+    # Logic moved to TOML templates directly.
+    # No overwrite needed here to rely on TOML source of truth.
     if model_type == "sdxl":
-        # Booster A: Multires Noise (Texture Quality)
-        # FIX: Force Multires over generic default (0.035), unless it's champion specific (0.0411)
-        current_noise = config.get("noise_offset")
-        is_champion_value = (current_noise == 0.0411)
-        
-        if not is_champion_value:
-             config["noise_offset_type"] = "Multires"
-             config["multires_noise_iterations"] = 6
-             config["multires_noise_discount"] = 0.3
-             # Remove legacy noise_offset to avoid conflicts
-             config.pop("noise_offset", None)
-             print("[RESEARCH] Multires Noise Activated (Overwriting generic default)")
-        else:
-             print("[LRS] Keeping champion specific noise offset (0.0411).")
-            
-        # Booster B: Min-SNR Gamma (Training Stability - CVPR 2024)
-        # FIX: Standardization to 5
-        if config.get("min_snr_gamma") != 5:
-            config["min_snr_gamma"] = 5
-            print("[RESEARCH] Min-SNR Gamma adjusted to 5 (Stability Booster)")
+         print("[RESEARCH] Using Baseline Strong Config from TOML (Dim 160, Multires, Prodigy)")
 
     # 4. FLUX OPTIMIZATION (FLORA PAPER)
     if model_type == "flux":
