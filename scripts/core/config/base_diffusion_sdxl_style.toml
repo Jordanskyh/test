@@ -53,28 +53,31 @@ train_batch_size = 8
 gradient_accumulation_steps = 2
 
 ###### optimizer ######
-optimizer_type = "adamw"
-optimizer_args = [ "betas=(0.9, 0.999)", "weight_decay=0.01", "eps=1e-08",]
-unet_lr = 1e-4
-text_encoder_lr = 1e-5
+optimizer_type = "Prodigy"
+optimizer_args = [ "weight_decay=0.01", "decouple=True", "use_bias_correction=True", "d_coeff=1.0",]
+unet_lr = 1.0
+text_encoder_lr = 1.0
 
 ###### lr scheduler ######
 lr_scheduler = "cosine"
-lr_warmup_steps = 20
+lr_warmup_steps = 0
 
 ###### noise offset ######
-noise_offset_type = "Original"
-noise_offset = 0.035
+# noise_offset_type = "Original"
+# noise_offset = 0.035
+noise_offset_type = "Multires"
+multires_noise_iterations = 6
+multires_noise_discount = 0.3
 
 ###### misc ######
-network_alpha = -1
-network_dim = -1
+network_alpha = 160
+network_dim = 160
 network_module = "networks.lora"
 network_args = []
 network_dropout = 0
 caption_dropout_rate = 0.1
 clip_skip = 1
 max_timestep = 1000
-min_snr_gamma = 7
-scale_weight_norms = 5
+min_snr_gamma = 5
+scale_weight_norms = 1
 seed = 2951032222

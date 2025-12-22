@@ -2,6 +2,7 @@
 """
 Standalone script for image model training (SDXL or Flux)
 IMPROVED: Hybrid Strategy + Research Backed Optimizations (Min-SNR, Multires, Dynamic)
+FINAL CHECK: Fixed logic overwrites for dormant boosters
 """
 
 import argparse
@@ -122,19 +123,36 @@ def create_config(task_id, model_path, model_name, model_type, expected_repo_nam
     # 3. RESEARCH BACKED BOOSTERS (SDXL ONLY)
     if model_type == "sdxl":
         # Booster A: Multires Noise (Texture Quality)
-        # Hanya aktif jika tidak ada konflik dengan LRS noise setting
-        if "noise_offset" not in config and "noise_offset_type" not in config:
-            config["noise_offset_type"] = "Multires"
-            config["multires_noise_iterations"] = 6
-            config["multires_noise_discount"] = 0.3
-            print("[RESEARCH] Multires Noise Activated (Texture Booster)")
-        elif config.get("noise_offset") == 0.0411:
-            print("[LRS] Using specific champion noise offset.")
+        # FIX: Force Multires over generic default (0.035), unless it's champion specific (0.0411)
+        current_noise = config.get("noise_offset")
+        is_champion_value = (current_noise == 0.0411)
+        
+        if not is_champion_value:
+             config["noise_offset_type"] = "Multires"
+             config["multires_noise_iterations"] = 6
+             config["multires_noise_discount"] = 0.3
+             # Remove legacy noise_offset to avoid conflicts
+             config.pop("noise_offset", None)
+             print("[RESEARCH] Multires Noise Activated (Overwriting generic default)")
+        else:
+             print("[LRS] Keeping champion specific noise offset (0.0411).")
             
         # Booster B: Min-SNR Gamma (Training Stability - CVPR 2024)
-        if "min_snr_gamma" not in config:
+        # FIX: Standardization to 5
+        if config.get("min_snr_gamma") != 5:
             config["min_snr_gamma"] = 5
-            print("[RESEARCH] Min-SNR Gamma = 5 Applied (Stability Booster)")
+            print("[RESEARCH] Min-SNR Gamma adjusted to 5 (Stability Booster)")
+
+    # 4. FLUX OPTIMIZATION (FLORA PAPER)
+    if model_type == "flux":
+        # Adaptive Guidance: Turunkan guidance untuk style agar lebih kreatif/fleksibel
+        if is_style:
+            # Default TOML is 85.0. Paper suggests lower for styles.
+            config["guidance_scale"] = 25.0
+            print("[RESEARCH] Flux Guidance Scale lowered to 25.0 for Style Task (Flexibility)")
+        else:
+            # Person task stays high (fidelity)
+            pass
 
     # Save to file
     config_path = os.path.join(train_cst.IMAGE_CONTAINER_CONFIG_SAVE_PATH, f"{task_id}.toml")
@@ -199,7 +217,7 @@ def run_training(model_type, config_path):
 
 
 async def main():
-    print("---STARTING IMAGE TRAINING SCRIPT (FINAL HYBRID)---", flush=True)
+    print("---STARTING IMAGE TRAINING SCRIPT (FINAL CHECKED)---", flush=True)
     parser = argparse.ArgumentParser(description="Image Model Training Script")
     parser.add_argument("--task-id", required=True, help="Task ID")
     parser.add_argument("--model", required=True, help="Model name or path")
