@@ -54,7 +54,7 @@ gradient_accumulation_steps = 2
 
 ###### optimizer ######
 optimizer_type = "Prodigy"
-optimizer_args = [ "weight_decay=0.01", "decouple=True", "use_bias_correction=True", "d_coeff=1.0",]
+optimizer_args = [ "weight_decay=0.01", "decouple=True", "use_bias_correction=True", "d_coef=1.0",]
 unet_lr = 1.0
 text_encoder_lr = 1.0
 
