@@ -86,12 +86,34 @@ def create_config(task_id, model_path, model_name, model_type, expected_repo_nam
     with open(config_template_path, "r") as file:
         config = toml.load(file)
 
-    # 1. BASELINE STRONG CONFIG
-    # SDXL butuh kapasitas besar (Dim 160)
+    # 1. BASELINE STRONG CONFIG (ADAPTIVE LOW-RANK STRATEGY)
+    # Pivot Strategy: Lower Rank = Better Generalization for Small Datasets
     if model_type == "sdxl":
-        config["network_dim"] = 160
-        config["network_alpha"] = 160
-        config["network_args"] = ["conv_dim=8", "conv_alpha=8", "dropout=null"]
+        num_images_check = get_image_count(train_data_dir)
+        print(f"--- ADAPTIVE LOW-RANK CONFIG ---")
+        print(f"Detected {num_images_check} training images.")
+        
+        if num_images_check < 15:
+            # Micro Dataset (<15): Ultra Low Rank
+            print("Mode: MICRO Dataset (<15) -> Using Dim 8 / Alpha 4 (Anti-Overfit)")
+            config["network_dim"] = 8
+            config["network_alpha"] = 4
+            # Prodigy with higher decay for micro data
+            config["optimizer_args"] = [ "weight_decay=0.1", "decouple=True", "use_bias_correction=True", "d_coef=0.5"] 
+        
+        elif num_images_check <= 40:
+             # Small Dataset (15-40): Low Rank
+            print("Mode: SMALL Dataset (15-40) -> Using Dim 16 / Alpha 8")
+            config["network_dim"] = 16
+            config["network_alpha"] = 8
+        
+        else:
+             # Medium/Large (>40): Moderate Rank
+            print("Mode: LARGE Dataset (>40) -> Using Dim 32 / Alpha 16")
+            config["network_dim"] = 32
+            config["network_alpha"] = 16
+            
+        config["network_args"] = ["conv_dim=8", "conv_alpha=4", "dropout=0.1"] # Added dropout for safety
     
     config["pretrained_model_name_or_path"] = model_path
     config["train_data_dir"] = train_data_dir
