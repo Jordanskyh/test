@@ -71,12 +71,12 @@ noise_offset = 0.035
 # multires_noise_discount = 0.3
 
 ###### misc ######
-network_alpha = 8
-network_dim = 16
+network_alpha = 32
+network_dim = 64
 network_module = "networks.lora"
 network_args = []
-network_dropout = 0.1 # Safety dropout
-caption_dropout_rate = 0.1
+network_dropout = 0
+caption_dropout_rate = 0
 clip_skip = 1
 max_timestep = 1000
 min_snr_gamma = 5

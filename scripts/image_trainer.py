@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """
 Standalone script for image model training (SDXL or Flux)
-IMPROVED: Hybrid Strategy + Research Backed Optimizations (Min-SNR, Multires, Dynamic)
-FINAL CHECK: Fixed logic overwrites for dormant boosters
+OPTIMIZED STRATEGY: Rank Inflation + Prodigy Auto-Adapt + Universal Config Mapping
 """
 
 import argparse
@@ -11,8 +10,6 @@ import os
 import subprocess
 import sys
 import toml
-import math
-import json
 
 # Add project root to python path to import modules
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -26,95 +23,135 @@ from core.config.config_handler import save_config_toml
 from core.dataset.prepare_diffusion_dataset import prepare_dataset
 from core.models.utility_models import ImageModelType
 
-# --- STRATEGY CONFIGURATION ---
-TARGET_STEPS_STYLE = 2500
-TARGET_STEPS_PERSON = 1200
-MIN_EPOCHS = 10
-MAX_EPOCHS = 100
 
-def get_image_count(dir_path):
-    """Menghitung jumlah gambar valid di direktori training"""
-    count = 0
-    valid_ext = ('.png', '.jpg', '.jpeg', '.webp', '.bmp')
-    for root, dirs, files in os.walk(dir_path):
-        for file in files:
-            if file.lower().endswith(valid_ext):
-                count += 1
-    return count if count > 0 else 1
-
-def calculate_dynamic_epochs(num_images, batch_size, repeats, is_style):
-    target = TARGET_STEPS_STYLE if is_style else TARGET_STEPS_PERSON
-    steps_per_epoch = (num_images * repeats) / batch_size
-    if steps_per_epoch < 1: steps_per_epoch = 1
-    ideal_epochs = math.ceil(target / steps_per_epoch)
-    final_epochs = max(MIN_EPOCHS, min(MAX_EPOCHS, ideal_epochs))
-    
-    print(f"--- DYNAMIC EPOCH CALCULATION ---")
-    print(f"Mode: {'STYLE' if is_style else 'PERSON'}")
-    print(f"Images: {num_images} | Repeats: {repeats} | Epochs: {final_epochs}")
-    return final_epochs
-
-def get_special_config_from_lrs(task_id, is_style, model_type):
-    """Membaca konfigurasi rahasia dari file LRS JSON"""
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    lrs_dir = os.path.join(script_dir, "lrs")
-    
-    if model_type == "flux":
-        filename = "flux.json"
-    else:
-        filename = "style_config.json" if is_style else "person_config.json"
-        
-    json_path = os.path.join(lrs_dir, filename)
-    
-    if os.path.exists(json_path):
-        try:
-            with open(json_path, 'r') as f:
-                data = json.load(f)
-                if task_id in data.get("data", {}):
-                    print(f"[LRS] FOUND special config for Task {task_id}")
-                    return data["data"][task_id]
-        except Exception as e:
-            print(f"[LRS] Error reading JSON: {e}")
-            
-    print(f"[LRS] No special config for Task {task_id}. Using Dynamic Logic.")
-    return None
+def get_model_path(path: str) -> str:
+    if os.path.isdir(path):
+        files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+        if len(files) == 1 and files[0].endswith(".safetensors"):
+            return os.path.join(path, files[0])
+    return path
 
 def create_config(task_id, model_path, model_name, model_type, expected_repo_name, repeats):
+    """Get the training data directory"""
     train_data_dir = train_paths.get_image_training_images_dir(task_id)
+
+    """Create the diffusion config file"""
     config_template_path, is_style = train_paths.get_image_training_config_template_path(model_type, train_data_dir)
 
     with open(config_template_path, "r") as file:
         config = toml.load(file)
 
-    # 1. BASELINE STRONG CONFIG (ADAPTIVE LOW-RANK STRATEGY)
-    # Pivot Strategy: Lower Rank = Better Generalization for Small Datasets
-    if model_type == "sdxl":
-        num_images_check = get_image_count(train_data_dir)
-        print(f"--- ADAPTIVE LOW-RANK CONFIG ---")
-        print(f"Detected {num_images_check} training images.")
-        
-        if num_images_check < 15:
-            # Micro Dataset (<15): Ultra Low Rank
-            print("Mode: MICRO Dataset (<15) -> Using Dim 8 / Alpha 4 (Anti-Overfit)")
-            config["network_dim"] = 8
-            config["network_alpha"] = 4
-            # Prodigy with higher decay for micro data
-            config["optimizer_args"] = [ "weight_decay=0.1", "decouple=True", "use_bias_correction=True", "d_coef=0.5"] 
-        
-        elif num_images_check <= 40:
-             # Small Dataset (15-40): Low Rank
-            print("Mode: SMALL Dataset (15-40) -> Using Dim 16 / Alpha 8")
-            config["network_dim"] = 16
-            config["network_alpha"] = 8
-        
-        else:
-             # Medium/Large (>40): Moderate Rank
-            print("Mode: LARGE Dataset (>40) -> Using Dim 32 / Alpha 16")
-            config["network_dim"] = 32
-            config["network_alpha"] = 16
-            
-        config["network_args"] = ["conv_dim=8", "conv_alpha=4", "dropout=0.1"] # Added dropout for safety
+    # --- CONFIG MAPPING STRATEGY (RANK INFLATION) ---
+    # Strategy: Upgrade specs (Rank/Conv) per tier to outperform standard baselines.
     
+    # Database Model-to-Config (Original Champion Mapping reference)
+    network_config_person = {
+        "stabilityai/stable-diffusion-xl-base-1.0": 235,
+        "Lykon/dreamshaper-xl-1-0": 235,
+        "Lykon/art-diffusion-xl-0.9": 235,
+        "SG161222/RealVisXL_V4.0": 467,
+        "stablediffusionapi/protovision-xl-v6.6": 235,
+        "stablediffusionapi/omnium-sdxl": 235,
+        "GraydientPlatformAPI/realism-engine2-xl": 235,
+        "GraydientPlatformAPI/albedobase2-xl": 467,
+        "KBlueLeaf/Kohaku-XL-Zeta": 235,
+        "John6666/hassaku-xl-illustrious-v10style-sdxl": 228,
+        "John6666/nova-anime-xl-pony-v5-sdxl": 235,
+        "cagliostrolab/animagine-xl-4.0": 699,
+        "dataautogpt3/CALAMITY": 235,
+        "dataautogpt3/ProteusSigma": 235,
+        "dataautogpt3/ProteusV0.5": 467,
+        "dataautogpt3/TempestV0.1": 456,
+        "ehristoforu/Visionix-alpha": 235,
+        "femboysLover/RealisticStockPhoto-fp16": 467,
+        "fluently/Fluently-XL-Final": 228,
+        "mann-e/Mann-E_Dreams": 456,
+        "misri/leosamsHelloworldXL_helloworldXL70": 235,
+        "misri/zavychromaxl_v90": 235,
+        "openart-custom/DynaVisionXL": 228,
+        "recoilme/colorfulxl": 228,
+        "zenless-lab/sdxl-aam-xl-anime-mix": 456,
+        "zenless-lab/sdxl-anima-pencil-xl-v5": 228,
+        "zenless-lab/sdxl-anything-xl": 228,
+        "zenless-lab/sdxl-blue-pencil-xl-v7": 467,
+        "Corcelio/mobius": 228,
+        "GHArt/Lah_Mysterious_SDXL_V4.0_xl_fp16": 235,
+        "OnomaAIResearch/Illustrious-xl-early-release-v0": 228
+    }
+
+    network_config_style = {
+        "stabilityai/stable-diffusion-xl-base-1.0": 235,
+        "Lykon/dreamshaper-xl-1-0": 235,
+        "Lykon/art-diffusion-xl-0.9": 235,
+        "SG161222/RealVisXL_V4.0": 235,
+        "stablediffusionapi/protovision-xl-v6.6": 235,
+        "stablediffusionapi/omnium-sdxl": 235,
+        "GraydientPlatformAPI/realism-engine2-xl": 235,
+        "GraydientPlatformAPI/albedobase2-xl": 235,
+        "KBlueLeaf/Kohaku-XL-Zeta": 235,
+        "John6666/hassaku-xl-illustrious-v10style-sdxl": 235,
+        "John6666/nova-anime-xl-pony-v5-sdxl": 235,
+        "cagliostrolab/animagine-xl-4.0": 235,
+        "dataautogpt3/CALAMITY": 235,
+        "dataautogpt3/ProteusSigma": 235,
+        "dataautogpt3/ProteusV0.5": 235,
+        "dataautogpt3/TempestV0.1": 228,
+        "ehristoforu/Visionix-alpha": 235,
+        "femboysLover/RealisticStockPhoto-fp16": 235,
+        "fluently/Fluently-XL-Final": 235,
+        "mann-e/Mann-E_Dreams": 235,
+        "misri/leosamsHelloworldXL_helloworldXL70": 235,
+        "misri/zavychromaxl_v90": 235,
+        "openart-custom/DynaVisionXL": 235,
+        "recoilme/colorfulxl": 235,
+        "zenless-lab/sdxl-aam-xl-anime-mix": 235,
+        "zenless-lab/sdxl-anima-pencil-xl-v5": 235,
+        "zenless-lab/sdxl-anything-xl": 235,
+        "zenless-lab/sdxl-blue-pencil-xl-v7": 235,
+        "Corcelio/mobius": 235,
+        "GHArt/Lah_Mysterious_SDXL_V4.0_xl_fp16": 235,
+        "OnomaAIResearch/Illustrious-xl-early-release-v0": 235
+    }
+
+    # RE-ENGINEERED CONFIG MAPPING (RANK INFLATION)
+    config_mapping = {
+        # TIER 1: Model Ringan/Art (Original: Rank 32)
+        # STRATEGI: Upgrade ke Rank 64. 
+        # Aman untuk style (tidak overfit), tapi menangkap detail tekstur lebih baik.
+        228: {
+            "network_dim": 64,          # UPGRADED from 32
+            "network_alpha": 32,        # Stabil (Dim/2)
+            "network_args": []
+        },
+        235: {
+            "network_dim": 64,          # UPGRADED from 32
+            "network_alpha": 32,        # Stabil
+            "network_args": ["conv_dim=4", "conv_alpha=4", "dropout=null"]
+        },
+
+        # TIER 2: Model Realis/Menengah (Original: Rank 64)
+        # STRATEGI: Upgrade ke Rank 128 "God Mode".
+        # Menangkap pori-pori & tekstur kulit realistis. Conv 8 untuk struktur wajah tegas.
+        456: {
+            "network_dim": 128,         # UPGRADED from 64
+            "network_alpha": 64,        # Stabil
+            "network_args": []
+        },
+        467: {
+            "network_dim": 128,         # UPGRADED from 64
+            "network_alpha": 64,        # Stabil
+            "network_args": ["conv_dim=8", "conv_alpha=4", "dropout=null"] # Conv UPGRADED
+        },
+
+        # TIER 3: Model Berat/Complex (Original: Rank 96)
+        # STRATEGI: Upgrade ke Rank 160. Kapasitas masif untuk model raksasa (Animagine).
+        699: {
+            "network_dim": 160,         # UPGRADED from 96
+            "network_alpha": 80,        # Stabil
+            "network_args": ["conv_dim=8", "conv_alpha=4", "dropout=null"]
+        },
+    }
+
     config["pretrained_model_name_or_path"] = model_path
     config["train_data_dir"] = train_data_dir
     output_dir = train_paths.get_checkpoints_output_path(task_id, expected_repo_name)
@@ -122,44 +159,29 @@ def create_config(task_id, model_path, model_name, model_type, expected_repo_nam
         os.makedirs(output_dir, exist_ok=True)
     config["output_dir"] = output_dir
 
-    # 2. LOAD LRS (Rahasia) - Priority 1
-    special_config = get_special_config_from_lrs(task_id, is_style, model_type)
-    
-    if special_config:
-        for key, value in special_config.items():
-            config[key] = value
-            print(f"[LRS] Applied: {key} = {value}")
-            
-        if "max_train_epochs" not in special_config and model_type == "sdxl":
-             num_images = get_image_count(train_data_dir)
-             batch_size = config.get("train_batch_size", 4)
-             config["max_train_epochs"] = calculate_dynamic_epochs(num_images, batch_size, repeats, is_style)
-
-    else:
-        # Priority 2: Full Dynamic Logic (Task Baru)
-        if model_type == "sdxl":
-            num_images = get_image_count(train_data_dir)
-            batch_size = config.get("train_batch_size", 4)
-            config["max_train_epochs"] = calculate_dynamic_epochs(num_images, batch_size, repeats, is_style)
-
-    # 3. RESEARCH BACKED BOOSTERS (SDXL ONLY) - [CLEANUP]
-    # Logic moved to TOML templates directly.
-    # No overwrite needed here to rely on TOML source of truth.
     if model_type == "sdxl":
-         print("[RESEARCH] Using Baseline Strong Config from TOML (Dim 160, Multires, Prodigy)")
-
-    # 4. FLUX OPTIMIZATION (FLORA PAPER)
-    if model_type == "flux":
-        # Adaptive Guidance: Turunkan guidance untuk style agar lebih kreatif/fleksibel
         if is_style:
-            # Default TOML is 85.0. Paper suggests lower for styles.
-            config["guidance_scale"] = 25.0
-            print("[RESEARCH] Flux Guidance Scale lowered to 25.0 for Style Task (Flexibility)")
+            # STYLE TASK: Gunakan mapping yang sudah di-upgrade (Rank 64)
+            # Fallback ke 235 jika model tidak dikenal
+            network_config = config_mapping[network_config_style.get(model_name, 235)]
         else:
-            # Person task stays high (fidelity)
-            pass
+            # PERSON TASK: Gunakan mapping yang sudah di-upgrade (Rank 128/160)
+            network_config = config_mapping[network_config_person.get(model_name, 235)]
+            
+            # STRATEGI TAMBAHAN: AUTO-OPTIMIZER
+            # Paksa Optimizer Prodigy untuk Person Task
+            # Karena kita pakai Rank Tinggi (128/160), kita butuh optimizer cerdas.
+            print("💎 PERSON MODE DETECTED: Upgrading Optimizer to Prodigy for High-Rank Stability")
+            config["optimizer_type"] = "prodigy"
+            config["optimizer_args"] = ["decouple=True", "d_coef=1", "weight_decay=0.01", "use_bias_correction=True", "safeguard_warmup=True"]
+            config["unet_lr"] = 1.0
+            config["text_encoder_lr"] = 1.0
 
-    # Save to file
+        config["network_dim"] = network_config["network_dim"]
+        config["network_alpha"] = network_config["network_alpha"]
+        config["network_args"] = network_config["network_args"]
+
+    # Save config to file
     config_path = os.path.join(train_cst.IMAGE_CONTAINER_CONFIG_SAVE_PATH, f"{task_id}.toml")
     save_config_toml(config, config_path)
     print(f"Created config at {config_path}", flush=True)
@@ -178,7 +200,7 @@ def run_training(model_type, config_path):
             "--num_processes", "1",
             "--num_machines", "1",
             "--num_cpu_threads_per_process", "2",
-            f"/app/sd-scripts/{model_type}_train_network.py",
+            f"/app/sd-script/{model_type}_train_network.py",
             "--config_file", config_path
         ]
     elif model_type == "flux":
@@ -214,15 +236,16 @@ def run_training(model_type, config_path):
 
     except subprocess.CalledProcessError as e:
         print("Training subprocess failed!", flush=True)
-        # More robust error reporting
         print(f"Exit Code: {e.returncode}", flush=True)
+        # Menangani cmd yang bisa berupa list atau string
         cmd_str = ' '.join(e.cmd) if isinstance(e.cmd, list) else str(e.cmd)
         print(f"Command: {cmd_str}", flush=True)
         raise RuntimeError(f"Training subprocess failed with exit code {e.returncode}")
 
 
 async def main():
-    print("---STARTING IMAGE TRAINING SCRIPT (FINAL CHECKED)---", flush=True)
+    print("---STARTING IMAGE TRAINING SCRIPT (OPTIMIZED RANK INFLATION)---", flush=True)
+    # Parse command line arguments
     parser = argparse.ArgumentParser(description="Image Model Training Script")
     parser.add_argument("--task-id", required=True, help="Task ID")
     parser.add_argument("--model", required=True, help="Model name or path")
@@ -237,6 +260,7 @@ async def main():
 
     model_path = train_paths.get_image_base_model_path(args.model)
 
+    # Prepare dataset
     print("Preparing dataset...", flush=True)
     repeats = cst.DIFFUSION_SDXL_REPEATS if args.model_type == ImageModelType.SDXL.value else cst.DIFFUSION_FLUX_REPEATS
     
@@ -249,6 +273,7 @@ async def main():
         output_dir=train_cst.IMAGE_CONTAINER_IMAGES_PATH
     )
 
+    # Create config file
     config_path = create_config(
         args.task_id,
         model_path,
@@ -258,6 +283,7 @@ async def main():
         repeats
     )
 
+    # Run training
     run_training(args.model_type, config_path)
 
 

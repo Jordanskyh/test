@@ -61,19 +61,19 @@ lr_warmup_steps = 0
 
 ###### noise offset ######
 ###### noise offset ######
-noise_offset_type = "Original" # Reverted to Original for stability
-noise_offset = 0.035
-# noise_offset_type = "Multires"
-# multires_noise_iterations = 6
-# multires_noise_discount = 0.3
+# noise_offset_type = "Original" # Reverted to Original for stability
+# noise_offset = 0.035
+noise_offset_type = "Multires"
+multires_noise_iterations = 6
+multires_noise_discount = 0.3
 
 ###### misc ######
-network_alpha = 8
-network_dim = 16
+network_alpha = 64
+network_dim = 128
 network_module = "networks.lora"
 network_args = []
-network_dropout = 0.1 # Safety dropout
-caption_dropout_rate = 0.1
+network_dropout = 0 # Full Power
+caption_dropout_rate = 0
 clip_skip = 1
 max_timestep = 1000
 min_snr_gamma = 5
