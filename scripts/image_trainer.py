@@ -188,8 +188,8 @@ def create_config(task_id, model_path, model_name, model_type, expected_repo_nam
     num_images = len([f for f in os.listdir(train_data_dir) if f.endswith(".jpg") or f.endswith(".png") or f.endswith(".webp")])
     
     if num_images < 50:
-        target_epochs = 55  # FORCE MATURITY (Previous 13 epochs was UNDERFIT)
-        print(f"📉 Micro Dataset ({num_images} imgs) detected. FORCING {target_epochs} Epochs for Maximum Quality.")
+        target_epochs = 30  # OPTIMAL: 30 (Prev 55 was Overcooked/Overfit)
+        print(f"📉 Micro Dataset ({num_images} imgs) detected. FORCING {target_epochs} Epochs for Peak Quality.")
     else:
         # Fallback to standard logic for larger datasets
         target_epochs = 30 
