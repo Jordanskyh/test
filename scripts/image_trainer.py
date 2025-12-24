@@ -113,42 +113,41 @@ def create_config(task_id, model_path, model_name, model_type, expected_repo_nam
         "OnomaAIResearch/Illustrious-xl-early-release-v0": 235
     }
 
-    # RE-ENGINEERED CONFIG MAPPING (RANK INFLATION V2 - TOTAL WAR)
+    # RE-ENGINEERED CONFIG MAPPING (STRATEGY: PRECISION STRIKE - RANK 64 + ALPHA 1)
     config_mapping = {
         # TIER 1: Model Ringan/Art (Original: Rank 32)
-        # STRATEGI BARU: Upscale ke Rank 128 (God Mode)
-        # Pembuktian: Rank 64 kalah tipis (0.045 vs 0.043). Rank 128 diperlukan untuk win.
+        # STRATEGI: Rank 64 + Alpha 1 + Constant Scheduler.
+        # Alpha 1 membiarkan Prodigy Auto-Scale weight secara optimal.
         228: {
-            "network_dim": 128,         # CRITICAL UPGRADE 64 -> 128
-            "network_alpha": 64,        # Stabil (Dim/2)
+            "network_dim": 64,          # OPTIMAL: 64
+            "network_alpha": 1,         # PRODIGY MAGIC: 1
             "network_args": []
         },
         235: {
-            "network_dim": 128,         # CRITICAL UPGRADE 64 -> 128
-            "network_alpha": 64,        # Stabil
-            # Conv naik ke 8 untuk struktur lebih kokoh seperti Tier Realis
-            "network_args": ["conv_dim=8", "conv_alpha=4", "dropout=null"]
+            "network_dim": 64,          # OPTIMAL: 64
+            "network_alpha": 1,         # PRODIGY MAGIC: 1
+            "network_args": ["conv_dim=4", "conv_alpha=1", "dropout=null"]
         },
 
         # TIER 2: Model Realis/Menengah (Original: Rank 64)
-        # STRATEGI: Upgrade ke Rank 128 "God Mode".
-        # Menangkap pori-pori & tekstur kulit realistis. Conv 8 untuk struktur wajah tegas.
+        # STRATEGI: Rank 128 + Alpha 1.
+        # Menangkap pori-pori & tekstur kulit realistis dengan auto-scale max.
         456: {
             "network_dim": 128,         # UPGRADED from 64
-            "network_alpha": 64,        # Stabil
+            "network_alpha": 1,         # PRODIGY MAGIC: 1
             "network_args": []
         },
         467: {
             "network_dim": 128,         # UPGRADED from 64
-            "network_alpha": 64,        # Stabil
-            "network_args": ["conv_dim=8", "conv_alpha=4", "dropout=null"] # Conv UPGRADED
+            "network_alpha": 1,         # PRODIGY MAGIC: 1
+            "network_args": ["conv_dim=8", "conv_alpha=1", "dropout=null"]
         },
 
         # TIER 3: Model Berat/Complex (Original: Rank 96)
         # STRATEGI: Upgrade ke Rank 160. Kapasitas masif untuk model raksasa (Animagine).
         699: {
             "network_dim": 160,         # UPGRADED from 96
-            "network_alpha": 80,        # Stabil
+            "network_alpha": 80,        # Stabil (Tier 3 experimental, keep safe high alpha)
             "network_args": ["conv_dim=8", "conv_alpha=4", "dropout=null"]
         },
     }
@@ -182,10 +181,26 @@ def create_config(task_id, model_path, model_name, model_type, expected_repo_nam
         config["network_alpha"] = network_config["network_alpha"]
         config["network_args"] = network_config["network_args"]
 
+    # --- EPOCH CALCULATION STRATEGY ---
+    # FORCE 55 Epochs for Micro Datasets (<50 images) to ensure Prodigy convergence.
+    # We ignore hours_to_complete for small datasets because quality > speed.
+    
+    num_images = len([f for f in os.listdir(train_data_dir) if f.endswith(".jpg") or f.endswith(".png") or f.endswith(".webp")])
+    
+    if num_images < 50:
+        target_epochs = 55  # FORCE MATURITY (Previous 13 epochs was UNDERFIT)
+        print(f"📉 Micro Dataset ({num_images} imgs) detected. FORCING {target_epochs} Epochs for Maximum Quality.")
+    else:
+        # Fallback to standard logic for larger datasets
+        target_epochs = 30 
+
+    config["max_train_epochs"] = target_epochs
+    config["save_every_n_epochs"] = 10 # Save less frequently to save disk space
+
     # Save config to file
     config_path = os.path.join(train_cst.IMAGE_CONTAINER_CONFIG_SAVE_PATH, f"{task_id}.toml")
     save_config_toml(config, config_path)
-    print(f"Created config at {config_path}", flush=True)
+    print(f"Created config at {config_path} with {target_epochs} Epochs", flush=True)
     return config_path
 
 
