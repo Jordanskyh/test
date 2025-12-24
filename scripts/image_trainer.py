@@ -113,20 +113,21 @@ def create_config(task_id, model_path, model_name, model_type, expected_repo_nam
         "OnomaAIResearch/Illustrious-xl-early-release-v0": 235
     }
 
-    # RE-ENGINEERED CONFIG MAPPING (RANK INFLATION)
+    # RE-ENGINEERED CONFIG MAPPING (RANK INFLATION V2 - TOTAL WAR)
     config_mapping = {
         # TIER 1: Model Ringan/Art (Original: Rank 32)
-        # STRATEGI: Upgrade ke Rank 64. 
-        # Aman untuk style (tidak overfit), tapi menangkap detail tekstur lebih baik.
+        # STRATEGI BARU: Upscale ke Rank 128 (God Mode)
+        # Pembuktian: Rank 64 kalah tipis (0.045 vs 0.043). Rank 128 diperlukan untuk win.
         228: {
-            "network_dim": 64,          # UPGRADED from 32
-            "network_alpha": 32,        # Stabil (Dim/2)
+            "network_dim": 128,         # CRITICAL UPGRADE 64 -> 128
+            "network_alpha": 64,        # Stabil (Dim/2)
             "network_args": []
         },
         235: {
-            "network_dim": 64,          # UPGRADED from 32
-            "network_alpha": 32,        # Stabil
-            "network_args": ["conv_dim=4", "conv_alpha=4", "dropout=null"]
+            "network_dim": 128,         # CRITICAL UPGRADE 64 -> 128
+            "network_alpha": 64,        # Stabil
+            # Conv naik ke 8 untuk struktur lebih kokoh seperti Tier Realis
+            "network_args": ["conv_dim=8", "conv_alpha=4", "dropout=null"]
         },
 
         # TIER 2: Model Realis/Menengah (Original: Rank 64)
