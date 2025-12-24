@@ -78,4 +78,4 @@ clip_skip = 1
 max_timestep = 1000
 min_snr_gamma = 5
 scale_weight_norms = 5
-seed = 42951032222
+seed = 42
