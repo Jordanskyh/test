@@ -56,7 +56,7 @@ def create_config(task_id, model_path, model_name, model_type, expected_repo_nam
         "GraydientPlatformAPI/albedobase2-xl": 467,
         "KBlueLeaf/Kohaku-XL-Zeta": 235,
         "John6666/hassaku-xl-illustrious-v10style-sdxl": 228,
-        "John6666/nova-anime-xl-pony-v5-sdxl": 235,
+        "John6666/nova-anime-xl-pony-v5-sdxl": 240, # OPTIMIZED: Rank 64 (Sniper Mode)
         "cagliostrolab/animagine-xl-4.0": 699,
         "dataautogpt3/CALAMITY": 235,
         "dataautogpt3/ProteusSigma": 235,
@@ -113,20 +113,26 @@ def create_config(task_id, model_path, model_name, model_type, expected_repo_nam
         "OnomaAIResearch/Illustrious-xl-early-release-v0": 235
     }
 
-    # RE-ENGINEERED CONFIG MAPPING (STRATEGY: PRECISION STRIKE - RANK 64 + ALPHA 1)
+    # RE-ENGINEERED CONFIG MAPPING (STRATEGY: TRUE CLONE - RANK 32)
     config_mapping = {
         # TIER 1: Model Ringan/Art (Original: Rank 32)
-        # STRATEGI: Rank 64 + Alpha 1 + Constant Scheduler.
-        # Alpha 1 membiarkan Prodigy Auto-Scale weight secara optimal.
+        # STRATEGI: Rank 32 (Match Champion) + Alpha 1.
+        # Rank 64 terbukti terlalu tidak stabil. Balik ke 32 untuk konsistensi.
         228: {
-            "network_dim": 64,          # OPTIMAL: 64
+            "network_dim": 32,          # MATCH CHAMPION: 32
             "network_alpha": 1,         # PRODIGY MAGIC: 1
             "network_args": []
         },
         235: {
-            "network_dim": 64,          # OPTIMAL: 64
-            "network_alpha": 1,         # PRODIGY MAGIC: 1
-            "network_args": ["conv_dim=4", "conv_alpha=1", "dropout=null"]
+            "network_dim": 32,          # MATCH CHAMPION: 32
+            "network_alpha": 32,        # MATCH CHAMPION: 32
+            "network_args": ["conv_dim=4", "conv_alpha=4", "dropout=null"]
+        },
+        # --- NEW SNIPER CONFIG (RANK 64 for PONY) ---
+        240: {
+            "network_dim": 64,          # UPGRADE: Rank 64 (Lebih Detail)
+            "network_alpha": 1,         # UPGRADE: Alpha 1 (Prodigy Optimized)
+            "network_args": ["conv_dim=8", "conv_alpha=1", "dropout=null"]
         },
 
         # TIER 2: Model Realis/Menengah (Original: Rank 64)
@@ -182,18 +188,23 @@ def create_config(task_id, model_path, model_name, model_type, expected_repo_nam
         config["network_args"] = network_config["network_args"]
 
     # --- EPOCH CALCULATION STRATEGY ---
-    # FORCE 55 Epochs for Micro Datasets (<50 images) to ensure Prodigy convergence.
-    # We ignore hours_to_complete for small datasets because quality > speed.
+    # FORCE TIER 1 EPOCH RULES:
+    # - STYLE TASK: 25 Epochs (Pelan & Halus)
+    # - PERSON TASK: 30 Epochs (Hafalan Kuat)
     
-    num_images = len([f for f in os.listdir(train_data_dir) if f.endswith(".jpg") or f.endswith(".png") or f.endswith(".webp")])
-    
-    if num_images < 50:
-        target_epochs = 30  # OPTIMAL: 30 (Prev 55 was Overcooked/Overfit)
-        print(f"📉 Micro Dataset ({num_images} imgs) detected. FORCING {target_epochs} Epochs for Peak Quality.")
+    # Deteksi Task Type dari Config yang sudah dibuat
+    if is_style:
+        target_epochs = 25
+        print(f"🎨 Style Task Detected. FORCING {target_epochs} Epochs (Tier 1 Spec).")
     else:
-        # Fallback to standard logic for larger datasets
-        target_epochs = 30 
-
+        # Person Task
+        num_images = len([f for f in os.listdir(train_data_dir) if f.endswith(".jpg") or f.endswith(".png") or f.endswith(".webp")])
+        if num_images < 50:
+            target_epochs = 30 # Micro/Small Person Dataset
+            print(f"🧔 Micro/Small Person Dataset Detected. FORCING {target_epochs} Epochs (Tier 1 Spec).")
+        else:
+            target_epochs = 30 # Fallback Safe Person
+            
     config["max_train_epochs"] = target_epochs
     config["save_every_n_epochs"] = 10 # Save less frequently to save disk space
 
