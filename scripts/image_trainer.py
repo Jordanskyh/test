@@ -128,11 +128,11 @@ def create_config(task_id, model_path, model_name, model_type, expected_repo_nam
             "network_alpha": 32,        # MATCH CHAMPION: 32
             "network_args": ["conv_dim=4", "conv_alpha=4", "dropout=null"]
         },
-        # --- NEW SNIPER CONFIG (RANK 64 for PONY) ---
+        # --- (SNIPER REVERTED TO TIER 1 SPEC) ---
         240: {
-            "network_dim": 64,          # UPGRADE: Rank 64 (Lebih Detail)
-            "network_alpha": 1,         # UPGRADE: Alpha 1 (Prodigy Optimized)
-            "network_args": ["conv_dim=8", "conv_alpha=1", "dropout=null"]
+            "network_dim": 32,          # REVERT: Rank 32 (Stability King)
+            "network_alpha": 1,         # KEEP: Alpha 1 (Prodigy Optimized)
+            "network_args": ["conv_dim=4", "conv_alpha=1", "dropout=null"]
         },
 
         # TIER 2: Model Realis/Menengah (Original: Rank 64)
