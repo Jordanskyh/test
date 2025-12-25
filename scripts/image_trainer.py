@@ -128,10 +128,10 @@ def create_config(task_id, model_path, model_name, model_type, expected_repo_nam
             "network_alpha": 32,        # MATCH CHAMPION: 32
             "network_args": ["conv_dim=4", "conv_alpha=4", "dropout=null"]
         },
-        # --- (SNIPER REVERTED TO TIER 1 SPEC) ---
+        # --- (THE GOLDEN MEAN: RANK 48) ---
         240: {
-            "network_dim": 32,          # REVERT: Rank 32 (Stability King)
-            "network_alpha": 1,         # KEEP: Alpha 1 (Prodigy Optimized)
+            "network_dim": 48,          # UPGRADE: Rank 48 (Sweet Spot?)
+            "network_alpha": 1,         # KEEP: Alpha 1
             "network_args": ["conv_dim=4", "conv_alpha=1", "dropout=null"]
         },
 
